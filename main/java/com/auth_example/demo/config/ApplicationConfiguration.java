@@ -1,5 +1,6 @@
 package com.auth_example.demo.config;
 
+import com.auth_example.demo.model.User;
 import com.auth_example.demo.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.util.Optional;
+
 @Configuration
 public class ApplicationConfiguration {
     private final UserRepository userRepository;
@@ -21,8 +24,17 @@ public class ApplicationConfiguration {
 
     @Bean
     UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return identifier -> {
+            // This would be for people logging in with email
+            Optional<User> user = userRepository.findByEmail(identifier);
+
+            // This would be for people signing in via Google, etc. (oAuth2)
+            if (user.isEmpty()) {
+                user = userRepository.findByUsername(identifier);
+            }
+
+            return user.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        };
     }
 
     @Bean

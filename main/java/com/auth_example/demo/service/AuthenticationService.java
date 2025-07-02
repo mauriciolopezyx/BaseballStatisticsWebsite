@@ -6,13 +6,21 @@ import com.auth_example.demo.dto.VerifyUserDto;
 import com.auth_example.demo.model.User;
 import com.auth_example.demo.repository.UserRepository;
 import jakarta.mail.MessagingException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
@@ -22,36 +30,52 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final JWTService jwtService;
 
     public AuthenticationService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            EmailService emailService
+            EmailService emailService,
+            JWTService jwtService
     )
     {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
+        this.jwtService = jwtService;
     }
 
     // will be called when user first attempts to register
     public User register(RegisterUserDto input) {
+        System.out.println(input.getEmail());
+        Optional<User> userFromEmail = userRepository.findByEmail(input.getEmail());
+        if (userFromEmail.isPresent()) {
+            throw new RuntimeException("An account with the given email already exists");
+        }
+        Optional<User> userFromName = userRepository.findByUsername(input.getUsername());
+        if (userFromName.isPresent()) {
+            throw new RuntimeException("An account with the given username already exists");
+        }
         User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
-        user.setEnabled(true);
         sendVerificationEmail(user);
         return userRepository.save(user);
     }
 
     public User authenticate(LoginUserDto input) {
         User user = userRepository.findByEmail(input.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException(input.getEmail()));
+                .orElseThrow(() -> new RuntimeException("User not found"));
         if (!user.isEnabled()) {
             throw new RuntimeException("User is not verified - please verify to continue");
         }
+
+        if (!user.hasPassword()) {
+            throw new RuntimeException("This account uses " + user.getProvider() + " login. Please login with " + user.getProvider() + " and then reset your password after.");
+        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         input.getEmail(),
@@ -65,6 +89,9 @@ public class AuthenticationService {
         Optional<User> optionalUser = userRepository.findByEmail(input.getEmail());
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
+            if (user.isEnabled()) {
+                throw new RuntimeException("Account already verified");
+            }
             if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
                 throw new RuntimeException("Verification code has expired");
             }
@@ -94,6 +121,74 @@ public class AuthenticationService {
             userRepository.save(user);
         } else {
             throw new RuntimeException("User not found");
+        }
+    }
+
+    public ResponseEntity<?> refreshOrValidate(String token) {
+        // 1) No cookie at all ➜ not authenticated
+        System.out.println(token);
+        if (token == null || token.isBlank()) {
+            System.out.println("Token does note xist");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+
+            System.out.println("1st PART - Extracting username");
+            String username = jwtService.extractUsername(token);
+            System.out.println("Extracted username: '" + username + "'");
+
+            System.out.println("2nd PART - Loading user from database");
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new UsernameNotFoundException(username));
+
+            System.out.println("4th PART - Validating token");
+
+            // 3) Completely invalid or tampered ➜ 401
+            if (!jwtService.isTokenValid(token, user)) {
+                System.out.println("JWT rejected");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            Map<String, Object> userResponse = Map.of(
+                    "username", user.getUsername(),
+                    "authorities", user.getAuthorities(),
+                    "authenticated", true
+            );
+
+            // 4) Check how close we are to expiry
+            Instant exp = jwtService.extractRelativeExpiration(token);
+            long remainingMs = Duration.between(Instant.now(), exp).toMillis();
+
+            // Renew if < 5 minutes remain
+            final long RENEW_THRESHOLD_MS = 5 * 60_000;
+
+            if (remainingMs < RENEW_THRESHOLD_MS) {
+
+                // 4a) Generate fresh token with same TTL
+                long ttlMs = jwtService.getExpirationTime();   // e.g. 15 min
+                String newToken = jwtService.generateToken(user);
+
+                ResponseCookie cookie = ResponseCookie.from("jwt", newToken)
+                        .httpOnly(true)
+                        .secure(false) // TESTING, production would be true
+                        .sameSite("Strict")
+                        .path("/")
+                        .maxAge(Duration.ofMillis(ttlMs))
+                        .build();
+
+                // 4b) Return 200 + new cookie
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                        .build();
+            }
+
+            // 5) Still plenty of time left ➜ return user data
+            return ResponseEntity.ok(userResponse);
+
+        } catch (Exception ex) {
+            // any parsing / lookup error ➜ 401
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 

@@ -3,6 +3,7 @@ package com.auth_example.demo.config;
 import com.auth_example.demo.service.JWTService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.lang.NonNull;
@@ -38,35 +39,59 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain chain
-    ) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException
+    {
+        String jwt = null;
+        String authHeader = request.getHeader("Authorization");
+
+        // FOR POSTMAN
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7);
+        } else {
+            // FOR HTML ONLY COOKIES
+            if (request.getCookies() != null) {
+                for (Cookie c : request.getCookies()) {
+                    if ("jwt".equals(c.getName())) {
+                        jwt = c.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+
+        // continues chain if no token
+        if (jwt == null || jwt.trim().isEmpty()) {
             chain.doFilter(request, response);
             return;
         }
+        System.out.println("Current JWT: " + jwt);
+
         try {
-            final String jwt = authHeader.substring(7);
-            final String userEmail = jwtService.extractUsername(jwt);
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (userEmail != null && authentication == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+            String username = jwtService.extractUsername(jwt);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                System.out.println("right before with username: " + username);
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                System.out.println("right after");
+                System.out.println(userDetails);
+
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails, null, userDetails.getAuthorities());
+
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             }
-            chain.doFilter(request, response);
-        } catch (Exception e) {
-            handlerExceptionResolver.resolveException(request, response, null, e);
+        } catch (Exception ex) {
+            System.out.println("JWT Authentication Failed: " + ex.getMessage());
+            //handlerExceptionResolver.resolveException(request, response, null, ex);
+            SecurityContextHolder.clearContext();
         }
+        chain.doFilter(request, response);
     }
 
 }
