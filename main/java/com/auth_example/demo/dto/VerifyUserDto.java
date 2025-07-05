@@ -1,11 +1,3 @@
 package com.auth_example.demo.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class VerifyUserDto {
-    private String email;
-    private String verificationCode;
-}
+public record VerifyUserDto(String email, String verificationCode) {}

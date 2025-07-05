@@ -1,7 +1,10 @@
 package com.auth_example.demo.controller;
 
 import com.auth_example.demo.dto.ResetPasswordDto;
+import com.auth_example.demo.dto.ToggleBookmarkDto;
 import com.auth_example.demo.model.User;
+import com.auth_example.demo.model.UserMetadata;
+import com.auth_example.demo.responses.UserProfileResponse;
 import com.auth_example.demo.service.UserService;
 import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +24,10 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> authenticatedUser() {
+    public ResponseEntity<UserProfileResponse> authenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        return ResponseEntity.ok(currentUser);
+        return ResponseEntity.ok(new UserProfileResponse(currentUser));
     }
 
     @GetMapping("/me/haspassword")
@@ -39,10 +42,6 @@ public class UserController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
 
-        if (!authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).body("User not authenticated");
-        }
-
         try {
             userService.resetPassword(currentUser, resetPasswordDto);
             return ResponseEntity.ok("Password updated successfully");
@@ -52,16 +51,23 @@ public class UserController {
         }
     }
 
-    //Then we need the ability to upload a new player to the database
-    // Settings page needs to retrieve the actual users name and not hardcode it
-    // Then obviously the player pages, actually retreiving them, able to bookmark separately, will probably need new fields in Users
-    // ability to bookmark and save recently viewed players, and actual working search page
+    @GetMapping("/me/request/metadata")
+    public ResponseEntity<?> requestMetadata() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        try {
+            return userService.requestMetadata(currentUser);
+        } catch (RuntimeException e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
-
-//    @GetMapping("/")
-//    public ResponseEntity<List<User>> allUsers() {
-//        List<User> users = userService.allUsers();
-//        return ResponseEntity.ok(users);
-//    }
+    @PostMapping("/me/bookmarks/toggle")
+    public ResponseEntity<?> togglePlayerBookmark(@RequestBody ToggleBookmarkDto toggleBookmarkDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(userService.togglePlayerBookmark(currentUser, toggleBookmarkDto));
+    }
 
 }

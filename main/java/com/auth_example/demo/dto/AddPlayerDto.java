@@ -1,71 +1,68 @@
 package com.auth_example.demo.dto;
 
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 
-@Getter
-@Setter
-public class AddPlayerDto {
-    @NotNull(message = "cannot be null")
-    private String Player;
-    @NotNull(message = "cannot be null")
-    private String Pos;
-    @NotNull(message = "cannot be null")
-    private int Age;
-    @NotNull(message = "cannot be null")
-    private String Team;
-    @NotNull(message = "cannot be null")
-    private String Lg;
-    @NotNull(message = "cannot be null")
-    private float WAR;
-    @NotNull(message = "cannot be null")
-    private int G;
-    @NotNull(message = "cannot be null")
-    private int PA;
-    @NotNull(message = "cannot be null")
-    private int AB;
-    @NotNull(message = "cannot be null")
-    private int R;
-    @NotNull(message = "cannot be null")
-    private int H;
-    @NotNull(message = "cannot be null")
-    private int DBL;
-    @NotNull(message = "cannot be null")
-    private int TPL;
-    @NotNull(message = "cannot be null")
-    private int HR;
-    @NotNull(message = "cannot be null")
-    private int RBI;
-    @NotNull(message = "cannot be null")
-    private int SB;
-    @NotNull(message = "cannot be null")
-    private int CS;
-    @NotNull(message = "cannot be null")
-    private int BB;
-    @NotNull(message = "cannot be null")
-    private int SO;
-    @NotNull(message = "cannot be null")
-    private float BA;
-    @NotNull(message = "cannot be null")
-    private float OBP;
-    @NotNull(message = "cannot be null")
-    private float SLG;
-    @NotNull(message = "cannot be null")
-    private float OPS;
-    @NotNull(message = "cannot be null")
-    private int TB;
-    @NotNull(message = "cannot be null")
-    private int GIDP;
-    @NotNull(message = "cannot be null")
-    private int HBP;
-    @NotNull(message = "cannot be null")
-    private int SH;
-    @NotNull(message = "cannot be null")
-    private int SF;
-    @NotNull(message = "cannot be null")
-    private int IBB;
-    @NotNull(message = "cannot be null")
-    private String Headshot;
-
-}
+public record AddPlayerDto(
+        @NotBlank
+         String player,
+        @NotBlank
+         String pos,
+        @PositiveOrZero
+         int age,
+        @NotBlank
+         String team,
+        @NotBlank
+         String lg,
+        @PositiveOrZero
+         float war,
+        @PositiveOrZero
+         int g,
+        @PositiveOrZero
+         int pa,
+        @PositiveOrZero
+         int ab,
+        @PositiveOrZero
+         int r,
+        @PositiveOrZero
+         int h,
+        @PositiveOrZero
+         int dbl,
+        @PositiveOrZero
+         int tpl,
+        @PositiveOrZero
+         int hr,
+        @PositiveOrZero
+         int rbi,
+        @PositiveOrZero
+         int sb,
+        @PositiveOrZero
+         int cs,
+        @PositiveOrZero
+         int bb,
+        @PositiveOrZero
+         int so,
+        @PositiveOrZero
+         float ba,
+        @PositiveOrZero
+         float obp,
+        @PositiveOrZero
+         float slg,
+        @PositiveOrZero
+         float ops,
+        @PositiveOrZero
+         int tb,
+        @PositiveOrZero
+         int gidp,
+        @PositiveOrZero
+         int hbp,
+        @PositiveOrZero
+         int sh,
+        @PositiveOrZero
+         int sf,
+        @PositiveOrZero
+         int ibb,
+        @NotBlank
+         String headshot
+)
+{}

@@ -49,16 +49,16 @@ public class AuthenticationService {
 
     // will be called when user first attempts to register
     public User register(RegisterUserDto input) {
-        System.out.println(input.getEmail());
-        Optional<User> userFromEmail = userRepository.findByEmail(input.getEmail());
+        System.out.println(input.email());
+        Optional<User> userFromEmail = userRepository.findByEmail(input.email());
         if (userFromEmail.isPresent()) {
             throw new RuntimeException("An account with the given email already exists");
         }
-        Optional<User> userFromName = userRepository.findByUsername(input.getUsername());
+        Optional<User> userFromName = userRepository.findByUsername(input.username());
         if (userFromName.isPresent()) {
             throw new RuntimeException("An account with the given username already exists");
         }
-        User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
+        User user = new User(input.username(), input.email(), passwordEncoder.encode(input.password()));
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         sendVerificationEmail(user);
@@ -66,7 +66,7 @@ public class AuthenticationService {
     }
 
     public User authenticate(LoginUserDto input) {
-        User user = userRepository.findByEmail(input.getEmail())
+        User user = userRepository.findByEmail(input.email())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         if (!user.isEnabled()) {
             throw new RuntimeException("User is not verified - please verify to continue");
@@ -78,15 +78,15 @@ public class AuthenticationService {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        input.getEmail(),
-                        input.getPassword()
+                        input.email(),
+                        input.password()
                 )
         );
         return user;
     }
 
     public void verifyUser(VerifyUserDto input) {
-        Optional<User> optionalUser = userRepository.findByEmail(input.getEmail());
+        Optional<User> optionalUser = userRepository.findByEmail(input.email());
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             if (user.isEnabled()) {
@@ -95,7 +95,7 @@ public class AuthenticationService {
             if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
                 throw new RuntimeException("Verification code has expired");
             }
-            if (user.getVerificationCode().equals(input.getVerificationCode())) {
+            if (user.getVerificationCode().equals(input.verificationCode())) {
                 user.setEnabled(true);
                 user.setVerificationCode(null);
                 user.setVerificationCodeExpiresAt(null);
@@ -128,21 +128,15 @@ public class AuthenticationService {
         // 1) No cookie at all ➜ not authenticated
         System.out.println(token);
         if (token == null || token.isBlank()) {
-            System.out.println("Token does note xist");
+            System.out.println("Token does not exist");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         try {
 
-            System.out.println("1st PART - Extracting username");
             String username = jwtService.extractUsername(token);
-            System.out.println("Extracted username: '" + username + "'");
-
-            System.out.println("2nd PART - Loading user from database");
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new UsernameNotFoundException(username));
-
-            System.out.println("4th PART - Validating token");
 
             // 3) Completely invalid or tampered ➜ 401
             if (!jwtService.isTokenValid(token, user)) {
@@ -183,11 +177,14 @@ public class AuthenticationService {
                         .build();
             }
 
+            System.out.println("Successfully verified user!");
+
             // 5) Still plenty of time left ➜ return user data
             return ResponseEntity.ok(userResponse);
 
         } catch (Exception ex) {
             // any parsing / lookup error ➜ 401
+            System.out.println("Verification failed");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }

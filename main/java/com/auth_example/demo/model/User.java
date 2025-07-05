@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
@@ -44,11 +45,16 @@ public class User implements UserDetails {
     @Column(name="provider_id")
     private String providerId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false)
+    private Role role;
+
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.provider = "local";
+        this.role = Role.USER;
     }
 
     public User(String username, String email, String provider, String providerId) {
@@ -57,6 +63,7 @@ public class User implements UserDetails {
         this.provider = provider;
         this.providerId = providerId;
         this.enabled = true; // OAuth2 users are auto-enabled since Google verified them
+        this.role = Role.USER;
     }
 
     public User() {}
@@ -64,7 +71,7 @@ public class User implements UserDetails {
     // would return role list but empty list returned since role based authentication isn't the focus
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     // vvv once again just assumed for all 4

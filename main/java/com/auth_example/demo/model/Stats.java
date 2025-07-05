@@ -75,37 +75,40 @@ public class Stats {
     @Column(nullable=false)
     private String headshot;
 
+    @Transient
+    private boolean bookmarked;
+
     public Stats(AddPlayerDto addPlayerDto) {
-        this.player = addPlayerDto.getPlayer();
-        this.pos = addPlayerDto.getPos();
-        this.age = addPlayerDto.getAge();
-        this.team = addPlayerDto.getTeam();
-        this.lg = addPlayerDto.getLg();
-        this.war = addPlayerDto.getWAR();
-        this.g = addPlayerDto.getG();
-        this.pa = addPlayerDto.getPA();
-        this.ab = addPlayerDto.getAB();
-        this.r = addPlayerDto.getR();
-        this.h = addPlayerDto.getH();
-        this.dbl = addPlayerDto.getDBL();
-        this.tpl = addPlayerDto.getTPL();
-        this.hr = addPlayerDto.getHR();
-        this.rbi = addPlayerDto.getRBI();
-        this.sb = addPlayerDto.getSB();
-        this.cs = addPlayerDto.getCS();
-        this.bb = addPlayerDto.getBB();
-        this.so = addPlayerDto.getSO();
-        this.ba = addPlayerDto.getBA();
-        this.obp = addPlayerDto.getOBP();
-        this.slg = addPlayerDto.getSLG();
-        this.ops = addPlayerDto.getOPS();
-        this.tb = addPlayerDto.getTB();
-        this.gidp = addPlayerDto.getGIDP();
-        this.hbp = addPlayerDto.getHBP();
-        this.sh = addPlayerDto.getSH();
-        this.sf = addPlayerDto.getSF();
-        this.ibb = addPlayerDto.getIBB();
-        this.headshot = addPlayerDto.getHeadshot();
+        this.player = addPlayerDto.player();
+        this.pos = addPlayerDto.pos();
+        this.age = addPlayerDto.age();
+        this.team = addPlayerDto.team();
+        this.lg = addPlayerDto.lg();
+        this.war = addPlayerDto.war();
+        this.g = addPlayerDto.g();
+        this.pa = addPlayerDto.pa();
+        this.ab = addPlayerDto.ab();
+        this.r = addPlayerDto.r();
+        this.h = addPlayerDto.h();
+        this.dbl = addPlayerDto.dbl();
+        this.tpl = addPlayerDto.tpl();
+        this.hr = addPlayerDto.hr();
+        this.rbi = addPlayerDto.rbi();
+        this.sb = addPlayerDto.sb();
+        this.cs = addPlayerDto.cs();
+        this.bb = addPlayerDto.bb();
+        this.so = addPlayerDto.so();
+        this.ba = addPlayerDto.ba();
+        this.obp = addPlayerDto.obp();
+        this.slg = addPlayerDto.slg();
+        this.ops = addPlayerDto.ops();
+        this.tb = addPlayerDto.tb();
+        this.gidp = addPlayerDto.gidp();
+        this.hbp = addPlayerDto.hbp();
+        this.sh = addPlayerDto.sh();
+        this.sf = addPlayerDto.sf();
+        this.ibb = addPlayerDto.ibb();
+        this.headshot = addPlayerDto.headshot();
     }
 
     public Stats() {}

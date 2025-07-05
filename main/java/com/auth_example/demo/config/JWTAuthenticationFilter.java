@@ -66,14 +66,11 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
             return;
         }
-        System.out.println("Current JWT: " + jwt);
 
         try {
             String username = jwtService.extractUsername(jwt);
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                System.out.println("right before with username: " + username);
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-                System.out.println("right after");
                 System.out.println(userDetails);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
@@ -86,6 +83,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             }
+            System.out.println("JWT Success - pt 1");
         } catch (Exception ex) {
             System.out.println("JWT Authentication Failed: " + ex.getMessage());
             //handlerExceptionResolver.resolveException(request, response, null, ex);
