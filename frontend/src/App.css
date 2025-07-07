@@ -1,0 +1,34 @@
+@import "tailwindcss";
+@plugin "tailwindcss-motion";
+
+@theme {
+    --color-background: var(--background);
+    --color-headers: var(--headers);
+    --color-paragraph: var(--paragraph);
+
+    --color-playerbg: var(--playerbg);
+
+    --color-homeslot: var(--homeslot);
+    --color-settingslot: var(--settingslot);
+}
+
+:root {
+    --background: #fff;
+    --headers: #000;
+    --paragraph: #000;
+
+    --playerbg: #ddd;
+
+    --homeslot: #ddd;
+    --settingslot: #bbb;
+}
+
+.dark {
+    --background: #222;
+    --headers: #bbb;
+    --paragraph: #fff;
+
+    --playerbg: #111;
+    --homeslot: #aaaaaa38;
+    --settingslot: #aaaaaa38;
+}
